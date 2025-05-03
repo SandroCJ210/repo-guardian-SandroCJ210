@@ -1,0 +1,9 @@
+ruff
+pytest
+pytest-xdist
+behave
+coverage
+textdistance
+networkx
+rich
+pygtrie
