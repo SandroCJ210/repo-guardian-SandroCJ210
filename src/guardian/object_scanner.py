@@ -1,6 +1,6 @@
 import zlib
 from pathlib import Path
-from hashlib import sha256
+from hashlib import sha1
 from dataclasses import dataclass
 
 @dataclass
@@ -11,18 +11,6 @@ class GitObject:
     sha: str
 
 def read_loose(obj_path: Path) -> GitObject:
-    """
-    Reads and parses a loose Git object from disk.
-
-    Args:
-        obj_path (Path): Path to the loose object (e.g., .git/objects/ab/cdef...).
-
-    Returns:
-        GitObject: Parsed object with type, size, content and verified SHA-256.
-    
-    Raises:
-        ValueError: If decompression or parsing fails, or SHA does not match.
-    """
     if not obj_path.is_file():
         raise FileNotFoundError(f"Object file not found: {obj_path}")
 
@@ -50,11 +38,9 @@ def read_loose(obj_path: Path) -> GitObject:
     if size != len(body):
         raise ValueError(f"Declared size {size} does not match body size {len(body)}")
 
-    # Recompute SHA to validate object integrity
     full_obj = f"{obj_type} {size}".encode() + b"\x00" + body
-    sha = sha256(full_obj).hexdigest()
+    sha = sha1(full_obj, usedforsecurity=False).hexdigest()
 
-    # Construct path-derived SHA (used for consistency check)
     expected_sha = obj_path.parent.name + obj_path.name
     if sha[:len(expected_sha)] != expected_sha:
         raise ValueError(f"SHA mismatch: expected {expected_sha}, got {sha}")
