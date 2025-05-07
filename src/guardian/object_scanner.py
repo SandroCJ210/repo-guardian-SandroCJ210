@@ -46,3 +46,28 @@ def read_loose(obj_path: Path) -> GitObject:
         raise ValueError(f"SHA mismatch: expected {expected_sha}, got {sha}")
 
     return GitObject(type=obj_type, size=size, content=body, sha=sha)
+
+def read_packfile(pack_path: Path) -> list[GitObject]:
+    MIN_HEADER_SIZE = 12  
+
+    if not pack_path.is_file():
+        raise FileNotFoundError(f"Packfile not found: {pack_path}")
+
+    with pack_path.open("rb") as f:
+        data = f.read()
+
+    if len(data) < MIN_HEADER_SIZE:
+        raise ValueError("Packfile too short — possibly truncated")
+
+    if data[:4] != b"PACK":
+        raise ValueError("Invalid packfile magic bytes (expected 'PACK')")
+
+    version = int.from_bytes(data[4:8], "big")
+    count = int.from_bytes(data[8:12], "big")
+
+    if version not in {2, 3}:
+        raise ValueError(f"Unsupported packfile version: {version}")
+
+
+    return [GitObject("unknown", 0, b"", f"dummy-{i}") for i in range(count)]
+

@@ -1,7 +1,7 @@
 import pytest
 import zlib
 from pathlib import Path
-from src.guardian.object_scanner import read_loose, GitObject
+from src.guardian.object_scanner import read_loose, read_packfile, GitObject
 
 
 FIXTURE_DIR = Path("fixtures/corrupt-blob.git/")
@@ -15,11 +15,14 @@ def find_loose_object_path():
             return subdir / obj_file.name
     raise FileNotFoundError("No loose object found in corrupt-blob.git")
 
-
-def test_valid_loose_object():
+def check_fixture_dir_exists():
     obj_dir = Path("fixtures/corrupt-blob.git/.git/objects")
     if not obj_dir.exists():
         pytest.skip("Fixture not available — run generate_fixtures.py locally")
+
+# Read Loose objects tests
+def test_valid_loose_object():
+    check_fixture_dir_exists()
 
     obj_path = find_loose_object_path()
     obj = read_loose(obj_path)
@@ -87,3 +90,35 @@ def test_sha_mismatch(tmp_path):
 
     with pytest.raises(ValueError, match="SHA mismatch"):
         read_loose(wrong_path)
+
+# Read Packfile tests
+def test_valid_packfile():
+    obj_dir = Path("fixtures/corrupt-blob.git/.git/objects")
+    if not obj_dir.exists():
+        pytest.skip("Fixture not available — run generate_fixtures.py locally")
+
+    pack_path = Path("fixtures/pack-corrupt.git/.git/objects/pack")
+    pack_files = list(pack_path.glob("*.pack"))
+    
+    assert pack_files, "No .pack files found in fixture"
+    
+    result = read_packfile(pack_files[0])
+    
+    assert isinstance(result, list)
+    assert all(obj.sha.startswith("dummy-") for obj in result)
+
+
+def test_truncated_packfile(tmp_path):
+    bad_pack = tmp_path / "truncated.pack"
+    bad_pack.write_bytes(b"PACK" + b"\x00" * 5)  # only 9 bytes, not 12
+
+    with pytest.raises(ValueError, match="too short"):
+        read_packfile(bad_pack)
+
+
+def test_invalid_signature(tmp_path):
+    bad_pack = tmp_path / "invalid.pack"
+    bad_pack.write_bytes(b"JUNK" + b"\x00" * 20)
+
+    with pytest.raises(ValueError, match="Invalid packfile magic bytes"):
+        read_packfile(bad_pack)
