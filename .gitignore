@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+*.egg-info/
+*.coverage
+*.env
+.venv/
+env/
+venv/
+
+# IDEs / editors
+.vscode/
+*.swp
+
+# Testing
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Bandit, coverage, etc.
+.coverage
+.cache/
+.mypy_cache/
+
+# Fixtures: excluir subrepos `.git/`
+fixtures/**/.git/
+fixtures/**/.git/*
+
+# Opcional: excluir objetos reales (si los quieres siempre regenerar)
+# fixtures/**/*.pack
+# fixtures/**/*.idx
