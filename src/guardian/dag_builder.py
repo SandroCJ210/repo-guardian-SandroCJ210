@@ -2,6 +2,7 @@ from collections import defaultdict, deque
 import networkx as nx
 from typing import Iterable
 from .object_scanner import GitObject
+from pathlib import Path
 
 def parse_commit_parents(content: bytes) -> list[str]:
     lines = content.decode(errors="replace").splitlines()
